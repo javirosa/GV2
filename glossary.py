@@ -64,7 +64,8 @@ usage:
 import getopt, os, sys, re
 
 #"pnumber.txt"
-pageFilePat    = r"p\d+.*\.txt"          
+pageFilePat    = r"p\d+.*\.txt$"
+pageFilePatGrp    = re.compile(r"p(?u)(\d+).*\.txt$")
 #"Matches '.number anything @ text'" as long as @ isn't preceded by \
 lineCommandPat = re.compile( r"\A\.\d+.*(?<!\\)@" ) 
 
@@ -75,7 +76,8 @@ class UsageError(Exception):
 class ParseError(Exception):
     def __init__(self,msg):
         self.msg = msg
-        
+
+#What does this do? 
 def occurCmp(w1,w2):
     inf1 = w1[1]
     inf2 = w2[1]
@@ -185,7 +187,14 @@ def main(argv=None):
                        if re.match(pageFilePat, fName, re.I) != None ]
     pageFileNames   = [ fName for fName in pageFileNames 
                        if os.path.isfile(fName) ]
-    pageFileNames.sort()
+
+    pageFileNumbers = [ int(pageFilePatGrp.search(name).group(1)) 
+                        for name in pageFileNames ]
+
+    numberedPages = zip(pageFileNumbers,pageFileNames)
+    numberedPages.sort();
+    _,pageFileNames = zip(*numberedPages)
+    print pageFileNames
 
 
     ignoreGloss = Glossary()
