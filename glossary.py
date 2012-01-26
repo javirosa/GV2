@@ -49,7 +49,6 @@ usage:
         for each page sorted by first occurance.
 
 
-
     Future improvments?
         Include frequency information and sorted.
         Use other information aside from newlines to
@@ -58,7 +57,8 @@ usage:
         eg .# @ line1 @ .# @ line2 @
         without using \n.
         Exclude phrases not just words.
-   TODO remove capitalization requirement, chain ignores, handle punctuation
+        Use a stemming algorithm
+   TODO remove capitalization requirement, chain ignores across files
 """
 
 import getopt, os, sys, re,codecs
@@ -205,7 +205,7 @@ def main(argv=None):
     numberedPages = zip(pageFileNumbers,pageFileNames)
     numberedPages.sort();
     _,pageFileNames = zip(*numberedPages)
-    print pageFileNames
+    #print pageFileNames
 
     #process ignore list
     ignoreGloss = Glossary()
