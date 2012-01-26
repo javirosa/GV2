@@ -188,15 +188,15 @@ def main(argv=None):
     pageFileNames   = [ fName for fName in pageFileNames 
                        if os.path.isfile(fName) ]
 
+    #Reorder according to numbers
     pageFileNumbers = [ int(pageFilePatGrp.search(name).group(1)) 
                         for name in pageFileNames ]
-
     numberedPages = zip(pageFileNumbers,pageFileNames)
     numberedPages.sort();
     _,pageFileNames = zip(*numberedPages)
     print pageFileNames
 
-
+    #process ignore list
     ignoreGloss = Glossary()
     ignorePath = os.path.join( pageDirPath,"gignore.txt" )
     if os.path.isfile( ignorePath ):
@@ -206,8 +206,7 @@ def main(argv=None):
 
     pageGlossSets = []
     totalGloss = Glossary()
-    for pageFileName in pageFileNames:
-        pageN = re.findall("\d+",pageFileName)[0]
+    for pageN,pageFileName in numberedPages:
         f = open(pageFileName,'r')
         lines = f.readlines()
         f.close()
