@@ -61,13 +61,25 @@ usage:
    TODO remove capitalization requirement, chain ignores, handle punctuation
 """
 
-import getopt, os, sys, re
+import getopt, os, sys, re,codecs
+fileEncoding = 'UTF-16' #also might want to try 'UTF-8' or 'ISO-8859-1'
+
+def readFile(fName):
+    f = openFile(fName)
+    lines = f.readlines()
+    f.close()
+    return lines
+
+def openFile(fName, mode = u"rb"):
+    f = codecs.open(fName,mode,fileEncoding)
+    return f
+    
 
 #"pnumber.txt"
 pageFilePat    = r"p\d+.*\.txt$"
 pageFilePatGrp    = re.compile(r"p(?u)(\d+).*\.txt$")
 #"Matches '.number anything @ text'" as long as @ isn't preceded by \
-lineCommandPat = re.compile( r"\A\.\d+.*(?<!\\)@" ) 
+lineCommandPat = re.compile( r"\A\.(\d+).*(?<!\\)@" ) 
 
 class UsageError(Exception):
     def __init__(self,msg):
@@ -160,7 +172,6 @@ def main(argv=None):
     if argv == None:
         argv = sys.argv
 
-
     #Ensure that a folder is given as a command line argument
     try:
         try:
@@ -200,17 +211,17 @@ def main(argv=None):
     ignoreGloss = Glossary()
     ignorePath = os.path.join( pageDirPath,"gignore.txt" )
     if os.path.isfile( ignorePath ):
-        f = open( ignorePath,'r' )
+        f = openFile( ignorePath,'r' )
         ignoreGloss.readGlossaryFile(f)
         f.close()
 
     pageGlossSets = []
     totalGloss = Glossary()
     for pageN,pageFileName in numberedPages:
-        f = open(pageFileName,'r')
+        f = openFile(pageFileName,'r')
         lines = f.readlines()
         f.close()
-        gloss = getPageGloss( lines, pageN )
+        gloss = getPageGloss(lines, pageN)
         resI = gloss.diff(ignoreGloss)
         ignoreGloss.merge(resI)
         resT = gloss.diff(totalGloss)
@@ -220,26 +231,28 @@ def main(argv=None):
         pageGlossSets.append( (pageN, gloss) )
     
     for pageN, gloss in pageGlossSets:
-        fout = open( os.path.join( pageDirPath,"gp%s.txt" % pageN) ,'w')
-        gloss.writeGlossary( fout, False)
+        fout = openFile( os.path.join( pageDirPath,"gp%s.txt" % pageN) ,'w')
+        gloss.writeGlossary(fout, False)
         fout.close()
-    fout = open( os.path.join(  pageDirPath,"gall" + str(os.path.basename(pageDirPath)).lower() + ".txt"),'w' )
+    fout = openFile( os.path.join(  pageDirPath,"gall" + str(os.path.basename(pageDirPath)).lower() + ".txt"),'w' )
     totalGloss.writeGlossary(fout,True)
     fout.close()
 
     
+#Generates and fills out a new Glossary
 def getPageGloss(lines,pageN = "-1"):
     gloss  = Glossary() 
     
     lineN = 1
     for line in lines:
-        annot = re.findall( lineCommandPat, line  )
-        if len( annot ) == 0:
+        annot = lineCommandPat.match(line)
+        
+        #If there is no line numbering annotation
+        if annot == None:
             lineN = lineN + 1
         else:
-            annot = annot[0]
             #exists by definition of lineCommandPat
-            lineN = int(re.findall("\d+",annot)[0])
+            lineN = int(annot.group(1))
 
         line = cleanUpLine(line)
         for word in line.split():
@@ -248,7 +261,11 @@ def getPageGloss(lines,pageN = "-1"):
 
 def cleanUpWord(word):
     import string
-    return word.strip(string.whitespace + string.punctuation + string.digits).capitalize()
+    import unicodedata
+    word = [ x for x in word if not (unicodedata.category(x)[0] in ('P','C','Z','N')) ]
+
+    return u''.join(word).capitalize()
+    #return word.strip(string.whitespace + string.punctuation + string.digits).capitalize()
 
 def cleanUpLine(line):
     oLine = " ".join( [ cleanUpWord(word) for word in line.split() ] )
