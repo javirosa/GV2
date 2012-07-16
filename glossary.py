@@ -62,7 +62,12 @@ usage:
 """
 
 import getopt, os, sys, re,codecs
+import unicodedata
 fileEncoding = 'UTF-16' #also might want to try 'UTF-8' or 'ISO-8859-1'
+
+"""From http://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string"""
+def strip_accents(s):
+   return ''.join((c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn'))
 
 def readFile(fName):
     f = openFile(fName)
@@ -89,7 +94,7 @@ class ParseError(Exception):
     def __init__(self,msg):
         self.msg = msg
 
-#What does this do? 
+"""Comparison function used to write out glossary based on order of occurence in f1 (file 1) and f2."""
 def occurCmp(w1,w2):
     inf1 = w1[1]
     inf2 = w2[1]
@@ -98,14 +103,22 @@ def occurCmp(w1,w2):
         return -1
     elif inf1 > inf2:
         return 1
-    if  w1[0] < w2[0]:
+    return spanishCmp(w1,w2)
+
+
+"""Ignores accents which leads to regular spanish sorting"""
+def spanishCmp(w1,w2):
+    word1 = strip_accents(w1[0])
+    word2 = strip_accents(w2[0])
+    if  word1 < word2:
         return -1
-    elif w1[0] > w2[0]:
+    elif word1 > word2:
         return 1
     return 0
 
+
+""""Represents a glossary object including file writing and reading functions."""
 class Glossary(object):
-    
     def readGlossaryFile(self, f ):
         lines = f.readlines()
         
@@ -130,7 +143,7 @@ class Glossary(object):
         if cmp != None:
             items.sort(cmp)
         elif alphaNum:
-            items.sort()
+            items.sort(spanishCmp)
         else:
             items.sort( occurCmp )
 
